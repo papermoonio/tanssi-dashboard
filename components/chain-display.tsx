@@ -17,8 +17,8 @@ const ChainInfoComponent = ({ network }) => {
     // Initial data load
     loadAllData();
 
-    // Load data every 3 seconds
-    const timer = setInterval(loadAllData, 3000);
+    // Load data every 4 seconds
+    const timer = setInterval(loadAllData, 4000);
 
     return () => {
       // Clean up the timer when the component unmounts
@@ -43,7 +43,6 @@ const ChainInfoComponent = ({ network }) => {
 
       // Chain Data
       const data = await fetchChainData(paraIDs);
-      console.log(data);
       if (data) {
         setChainData(data);
       } else {
@@ -74,6 +73,8 @@ const ChainInfoComponent = ({ network }) => {
             api.rpc.chain.getBlock(await api.rpc.chain.getBlockHash()),
             api.query.timestamp.now(),
           ]);
+
+          await api.disconnect();
 
           return {
             paraID,
