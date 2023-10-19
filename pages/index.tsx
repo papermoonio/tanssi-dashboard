@@ -75,7 +75,7 @@ const TanssiDashboard = () => {
       <br />
       <p>
         Don't judge the code :) as it is for demostration purposes only. You can check the source code &nbsp;
-        <a href='https://github.com/albertov19/tanssi-dashboard'>here</a>
+        <a href='https://github.com/papermoonio/tanssi-dashboard'>here</a>
       </p>
       <br />
     </Container>

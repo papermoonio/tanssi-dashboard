@@ -1,18 +1,18 @@
-# Dashboard To Display LocalAsset information on Moonbea-based networks
+# Dashboard Displaying Tanssi ContainerChain Status
 
 ## Getting started
 
 Clone the repo:
 
 ```
-git clone https://github.com/albertov19/localAssets-dashboard
-cd moonrevoker-dashboard
+git clone https://github.com/papermoonio/tanssi-dashboard
+cd tanssi-dashboard
 ```
 
 Install dependencies:
 
 ```
-yarn install
+yarn
 ```
 
 Start dev server (localhost:3000 by default):
