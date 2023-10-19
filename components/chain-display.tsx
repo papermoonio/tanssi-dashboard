@@ -35,7 +35,7 @@ const ChainInfoComponent = ({ network }) => {
 
       // Get all actives ParachainID
       const containerChains = (await api.query.collatorAssignment.collatorContainerChain()).toHuman().containerChains;
-      const paraIDs = Object.keys(containerChains).map(Number);
+      const paraIDs = [0].concat(Object.keys(containerChains).map(Number));
       setParaIDs(paraIDs);
 
       // Set Timestamp
@@ -59,19 +59,36 @@ const ChainInfoComponent = ({ network }) => {
       if (paraIDs) {
         // Parallelized queries
         const promises = paraIDs.map(async (paraID) => {
-          // Get ContainerChain URL
-          const paraURL = `wss://fraa-dancebox-${paraID}-rpc.a.dancebox.tanssi.network`;
+          console.log(paraID);
+          let paraURL;
+          let collatorPallet;
+          let collatorMethod;
+          // Get Dancebox/ContainerChain URL
+          switch (paraID) {
+            case 0:
+              paraURL = `wss://fraa-dancebox-rpc.a.dancebox.tanssi.network`;
+              collatorPallet = 'collatorAssignment';
+              collatorMethod = 'collatorContainerChain';
+              break;
+
+            default:
+              paraURL = `wss://fraa-dancebox-${paraID}-rpc.a.dancebox.tanssi.network`;
+              collatorPallet = 'authoritiesNoting';
+              collatorMethod = 'authorities';
+              break;
+          }
 
           // Create Container Provider
           const api = await containerProvider(paraURL);
 
           // Get Params
-          const [healthy, properties, blockHash, blockNumber, timestamp] = await Promise.all([
+          const [healthy, properties, nCollators, timestamp, blockNumber, blockHash] = await Promise.all([
             api.rpc.system.health(),
             api.rpc.system.properties(),
-            api.rpc.chain.getBlockHash(),
-            api.rpc.chain.getBlock(await api.rpc.chain.getBlockHash()),
+            api.query[collatorPallet][collatorMethod](),
             api.query.timestamp.now(),
+            api.rpc.chain.getBlock(await api.rpc.chain.getBlockHash()),
+            api.rpc.chain.getBlockHash(),
           ]);
 
           await api.disconnect();
@@ -80,9 +97,10 @@ const ChainInfoComponent = ({ network }) => {
             paraID,
             healthy,
             properties,
-            blockHash,
-            blockNumber,
+            nCollators,
             timestamp,
+            blockNumber,
+            blockHash,
           };
         });
 
@@ -107,6 +125,7 @@ const ChainInfoComponent = ({ network }) => {
                 <Table.HeaderCell>Para ID</Table.HeaderCell>
                 <Table.HeaderCell>Status</Table.HeaderCell>
                 <Table.HeaderCell>is EVM?</Table.HeaderCell>
+                <Table.HeaderCell># Collators</Table.HeaderCell>
                 <Table.HeaderCell>Last Block</Table.HeaderCell>
                 <Table.HeaderCell>Block Number</Table.HeaderCell>
                 <Table.HeaderCell>Block Hash</Table.HeaderCell>
@@ -117,15 +136,24 @@ const ChainInfoComponent = ({ network }) => {
                 <Table.Row key={index}>
                   <Table.Cell>
                     <a
-                      href={`https://polkadot.js.org/apps/?rpc=wss://fraa-dancebox-${item.paraID}-rpc.a.dancebox.tanssi.network`}
+                      href={
+                        item.paraID === 0
+                          ? 'https://polkadot.js.org/apps/?rpc=wss://fraa-dancebox-rpc.a.dancebox.tanssi.network'
+                          : `https://polkadot.js.org/apps/?rpc=wss://fraa-dancebox-${item.paraID}-rpc.a.dancebox.tanssi.network`
+                      }
                       target='_blank'
                       rel='noopener noreferrer'
                     >
-                      {item.paraID}
+                      {item.paraID === 0 ? 'Dancebox' : item.paraID}
                     </a>
                   </Table.Cell>
                   <Table.Cell>{item.healthy.peers >= 1 ? '✔️' : '❌'}</Table.Cell>
                   <Table.Cell>{item.properties.isEthereum ? '✔️' : '❌'}</Table.Cell>
+                  <Table.Cell>
+                    {item.paraID === 0
+                      ? item.nCollators.orchestratorChain.length.toString()
+                      : item.nCollators.length.toString()}
+                  </Table.Cell>
                   <Table.Cell>
                     {`${(
                       (BigInt(Date.now()) - BigInt(item.timestamp.toString())) / BigInt(1000) -
