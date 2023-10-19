@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 import { Form, Container, Message, Table, Loader } from 'semantic-ui-react';
 import { subProvider } from '../web3/api';
@@ -12,9 +12,12 @@ const ChainInfoComponent = ({ network }) => {
   const [timeNow, setTimeNow] = useState(BigInt(0));
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+
+  const isInitialLoad = useRef(true);
 
   useEffect(() => {
-    // Initial data load
+    // First Load
     loadAllData();
 
     // Load data every 4 seconds
@@ -28,6 +31,11 @@ const ChainInfoComponent = ({ network }) => {
 
   const loadAllData = async () => {
     setErrorMessage('');
+
+    // Load Spinner First Time
+    if (isInitialLoad.current) {
+      setLoading(true);
+    }
 
     try {
       // Load Provider
@@ -48,67 +56,81 @@ const ChainInfoComponent = ({ network }) => {
       } else {
         setErrorMessage('Error fetching chain data');
       }
+
+      // Mark Loading as Finished
+      isInitialLoad.current = false;
     } catch (err) {
       setErrorMessage(err.message);
     }
+
+    setLoading(false);
   };
 
   const fetchChainData = async (paraIDs) => {
     try {
       // Check if Parachain IDs were obtained
-      if (paraIDs) {
-        // Parallelized queries
-        const promises = paraIDs.map(async (paraID) => {
-          console.log(paraID);
-          let paraURL;
-          let collatorPallet;
-          let collatorMethod;
-          // Get Dancebox/ContainerChain URL
-          switch (paraID) {
-            case 0:
-              paraURL = `wss://fraa-dancebox-rpc.a.dancebox.tanssi.network`;
-              collatorPallet = 'collatorAssignment';
-              collatorMethod = 'collatorContainerChain';
-              break;
-
-            default:
-              paraURL = `wss://fraa-dancebox-${paraID}-rpc.a.dancebox.tanssi.network`;
-              collatorPallet = 'authoritiesNoting';
-              collatorMethod = 'authorities';
-              break;
-          }
-
-          // Create Container Provider
-          const api = await containerProvider(paraURL);
-
-          // Get Params
-          const [healthy, properties, nCollators, timestamp, blockNumber, blockHash] = await Promise.all([
-            api.rpc.system.health(),
-            api.rpc.system.properties(),
-            api.query[collatorPallet][collatorMethod](),
-            api.query.timestamp.now(),
-            api.rpc.chain.getBlock(await api.rpc.chain.getBlockHash()),
-            api.rpc.chain.getBlockHash(),
-          ]);
-
-          await api.disconnect();
-
-          return {
-            paraID,
-            healthy,
-            properties,
-            nCollators,
-            timestamp,
-            blockNumber,
-            blockHash,
-          };
-        });
-
-        // Use Promise.all to await all promises concurrently
-        return await Promise.all(promises);
-      } else {
+      if (!paraIDs || paraIDs.length === 0) {
         return null;
       }
+
+      // Create an array to store API instances
+      const apiInstances = [];
+
+      // Parallel APIs to optimize query speed
+      for (const paraID of paraIDs) {
+        let paraURL;
+        let collatorPallet;
+        let collatorMethod;
+
+        // Fetch depend on Dancebox or ContainerChain
+        switch (paraID) {
+          case 0:
+            paraURL = `wss://fraa-dancebox-rpc.a.dancebox.tanssi.network`;
+            collatorPallet = 'collatorAssignment';
+            collatorMethod = 'collatorContainerChain';
+            break;
+
+          default:
+            paraURL = `wss://fraa-dancebox-${paraID}-rpc.a.dancebox.tanssi.network`;
+            collatorPallet = 'authoritiesNoting';
+            collatorMethod = 'authorities';
+            break;
+        }
+
+        // Create Container Provider and store the API instance
+        const api = await containerProvider(paraURL);
+
+        apiInstances.push({ api, paraID, collatorPallet, collatorMethod });
+      }
+
+      // Fetch data in Parallel
+      const dataPromises = apiInstances.map(async ({ api, paraID, collatorPallet, collatorMethod }) => {
+        const [healthy, properties, nCollators, timestamp, blockNumber, blockHash] = await Promise.all([
+          api.rpc.system.health(),
+          api.rpc.system.properties(),
+          api.query[collatorPallet][collatorMethod](),
+          api.query.timestamp.now(),
+          api.rpc.chain.getBlock(await api.rpc.chain.getBlockHash()),
+          api.rpc.chain.getBlockHash(),
+        ]);
+
+        await api.disconnect();
+
+        return {
+          paraID,
+          healthy,
+          properties,
+          nCollators,
+          timestamp,
+          blockNumber,
+          blockHash,
+        };
+      });
+
+      // Wait for all data promises to resolve
+      const data = await Promise.all(dataPromises);
+
+      return data;
     } catch (err) {
       setErrorMessage(err.message);
       return null;
