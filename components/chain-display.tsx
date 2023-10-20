@@ -140,7 +140,7 @@ const ChainInfoComponent = ({ network }) => {
     if (chainData && chainData.length > 0) {
       return (
         <div>
-          <Table size='small' singleLine color='teal' textAlign='center'>
+          <Table size='small' fixed singleLine color='teal' textAlign='center'>
             <Table.Header>
               <Table.Row>
                 <Table.HeaderCell>Para ID</Table.HeaderCell>
@@ -150,7 +150,9 @@ const ChainInfoComponent = ({ network }) => {
                 <Table.HeaderCell>Decimals</Table.HeaderCell>
                 <Table.HeaderCell># Collators</Table.HeaderCell>
                 <Table.HeaderCell>Last Block</Table.HeaderCell>
-                <Table.HeaderCell>Block Number</Table.HeaderCell>
+                <Table.HeaderCell>
+                  Block # <br /> Explorer
+                </Table.HeaderCell>
                 <Table.HeaderCell>Block Hash</Table.HeaderCell>
               </Table.Row>
             </Table.Header>
@@ -186,6 +188,7 @@ const ChainInfoComponent = ({ network }) => {
                     ).toString()}s ago`}
                   </Table.Cell>
                   <Table.Cell>
+                    {item.blockNumber.block.header.number.toString()} <br />
                     <a
                       href={
                         item.paraID === 0
@@ -197,8 +200,24 @@ const ChainInfoComponent = ({ network }) => {
                       target='_blank'
                       rel='noopener noreferrer'
                     >
-                      {item.blockNumber.block.header.number.toString()}
+                      {'Substrate'}
                     </a>
+                    {item.properties.isEthereum ? (
+                      <span>
+                        {' | '}
+                        <a
+                          href={`https://tanssi-evmexplorer.netlify.app/block/${item.blockNumber.block.header.number.toString()}/?rpcUrl=https://fraa-dancebox-${
+                            item.paraID
+                          }-rpc.a.dancebox.tanssi.network`}
+                          target='_blank'
+                          rel='noopener noreferrer'
+                        >
+                          {'EVM'}
+                        </a>
+                      </span>
+                    ) : (
+                      ''
+                    )}
                   </Table.Cell>
                   <Table.Cell textAlign='left'>{item.blockHash.toString()}</Table.Cell>
                 </Table.Row>
