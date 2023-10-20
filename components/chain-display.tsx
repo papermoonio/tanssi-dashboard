@@ -140,7 +140,7 @@ const ChainInfoComponent = ({ network }) => {
     if (chainData && chainData.length > 0) {
       return (
         <div>
-          <Table size='small' fixed singleLine color='teal' textAlign='center'>
+          <Table fixed singleLine color='teal' textAlign='center'>
             <Table.Header>
               <Table.Row>
                 <Table.HeaderCell>Para ID</Table.HeaderCell>
