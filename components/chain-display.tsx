@@ -161,8 +161,8 @@ const ChainInfoComponent = ({ network }) => {
                     <a
                       href={
                         item.paraID === 0
-                          ? 'https://polkadot.js.org/apps/?rpc=wss://fraa-dancebox-rpc.a.dancebox.tanssi.network'
-                          : `https://polkadot.js.org/apps/?rpc=wss://fraa-dancebox-${item.paraID}-rpc.a.dancebox.tanssi.network`
+                          ? 'https://polkadot.js.org/apps/?rpc=wss://fraa-dancebox-rpc.a.dancebox.tanssi.network#'
+                          : `https://polkadot.js.org/apps/?rpc=wss://fraa-dancebox-${item.paraID}-rpc.a.dancebox.tanssi.network#`
                       }
                       target='_blank'
                       rel='noopener noreferrer'
@@ -185,7 +185,21 @@ const ChainInfoComponent = ({ network }) => {
                       BigInt(12)
                     ).toString()}s ago`}
                   </Table.Cell>
-                  <Table.Cell>{item.blockNumber.block.header.number.toString()}</Table.Cell>
+                  <Table.Cell>
+                    <a
+                      href={
+                        item.paraID === 0
+                          ? `https://polkadot.js.org/apps/?rpc=wss://fraa-dancebox-rpc.a.dancebox.tanssi.network#/explorer/query/${item.blockNumber.block.header.number.toString()}`
+                          : `https://polkadot.js.org/apps/?rpc=wss://fraa-dancebox-${
+                              item.paraID
+                            }-rpc.a.dancebox.tanssi.network#/explorer/query/${item.blockNumber.block.header.number.toString()}`
+                      }
+                      target='_blank'
+                      rel='noopener noreferrer'
+                    >
+                      {item.blockNumber.block.header.number.toString()}
+                    </a>
+                  </Table.Cell>
                   <Table.Cell textAlign='left'>{item.blockHash.toString()}</Table.Cell>
                 </Table.Row>
               ))}
