@@ -1,14 +1,18 @@
 const { ApiPromise, WsProvider } = require("@polkadot/api");
 
-export async function subProvider(network) {
-  const chains = {
-    dancebox: {
-      ws: "wss://fraa-dancebox-rpc.a.dancebox.tanssi.network",
-    },
-  };
+export async function subProvider(URL) {
+  let WS;
+  switch (URL) {
+    case "dancebox":
+      WS = "wss://fraa-dancebox-rpc.a.dancebox.tanssi.network";
+      break;
+    default:
+      WS = URL;
+      break;
+  }
 
   // Create WS Provider
-  const wsProvider = new WsProvider(chains[network].ws);
+  const wsProvider = new WsProvider(WS);
 
   // Wait for Provider
   const api = await ApiPromise.create({

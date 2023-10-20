@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 
 import { Form, Container, Message, Table, Loader } from 'semantic-ui-react';
 import { subProvider } from '../web3/api';
-import { containerProvider } from '../web3/containerAPI';
 
 import _ from 'underscore';
 
@@ -98,7 +97,7 @@ const ChainInfoComponent = ({ network }) => {
         }
 
         // Create Container Provider and store the API instance
-        const api = await containerProvider(paraURL);
+        const api = await subProvider(paraURL);
 
         apiInstances.push({ api, paraID, collatorPallet, collatorMethod });
       }
@@ -141,12 +140,14 @@ const ChainInfoComponent = ({ network }) => {
     if (chainData && chainData.length > 0) {
       return (
         <div>
-          <Table singleLine color='teal' textAlign='center'>
+          <Table size='small' singleLine color='teal' textAlign='center'>
             <Table.Header>
               <Table.Row>
                 <Table.HeaderCell>Para ID</Table.HeaderCell>
                 <Table.HeaderCell>Status</Table.HeaderCell>
                 <Table.HeaderCell>is EVM?</Table.HeaderCell>
+                <Table.HeaderCell>Token Symbol</Table.HeaderCell>
+                <Table.HeaderCell>Decimals</Table.HeaderCell>
                 <Table.HeaderCell># Collators</Table.HeaderCell>
                 <Table.HeaderCell>Last Block</Table.HeaderCell>
                 <Table.HeaderCell>Block Number</Table.HeaderCell>
@@ -171,6 +172,8 @@ const ChainInfoComponent = ({ network }) => {
                   </Table.Cell>
                   <Table.Cell>{item.healthy.peers >= 1 ? '✔️' : '❌'}</Table.Cell>
                   <Table.Cell>{item.properties.isEthereum ? '✔️' : '❌'}</Table.Cell>
+                  <Table.Cell>{item.properties.tokenSymbol.toHuman()}</Table.Cell>
+                  <Table.Cell>{item.properties.tokenDecimals.toHuman()}</Table.Cell>
                   <Table.Cell>
                     {item.paraID === 0
                       ? item.nCollators.orchestratorChain.length.toString()
