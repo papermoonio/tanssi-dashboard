@@ -6,6 +6,9 @@ export async function subProvider(URL) {
     case "dancebox":
       WS = "wss://fraa-dancebox-rpc.a.dancebox.tanssi.network";
       break;
+    case "flashbox":
+      WS = "wss://fraa-flashbox-rpc.a.stagenet.tanssi.network";
+      break;
     default:
       WS = URL;
       break;

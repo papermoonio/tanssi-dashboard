@@ -6,18 +6,15 @@ import { subProvider } from '../web3/api';
 import _ from 'underscore';
 
 const ChainInfoComponent = ({ network }) => {
-  const [paraIDs, setParaIDs] = useState(Array());
   const [chainData, setChainData] = useState([]);
-  const [timeNow, setTimeNow] = useState(BigInt(0));
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   const isInitialLoad = useRef(true);
 
   useEffect(() => {
     // First Load
-    loadAllData();
+    loadAllData(network);
 
     // Load data every 4 seconds
     const timer = setInterval(loadAllData, 4000);
@@ -28,7 +25,7 @@ const ChainInfoComponent = ({ network }) => {
     };
   }, [network]);
 
-  const loadAllData = async () => {
+  const loadAllData = async (network) => {
     setErrorMessage('');
 
     // Load Spinner First Time
@@ -37,19 +34,38 @@ const ChainInfoComponent = ({ network }) => {
     }
 
     try {
+      let paraIDs;
+
       // Load Provider
       const api = await subProvider(network);
 
-      // Get all actives ParachainID
-      const containerChains = (await api.query.collatorAssignment.collatorContainerChain()).toHuman().containerChains;
-      const paraIDs = [0].concat(Object.keys(containerChains).map(Number));
-      setParaIDs(paraIDs);
+      // Get Tanssi Para ID and Actives Parachain IDs
+      const [tanssiID, containerChains] = await Promise.all([
+        api.query.parachainInfo.parachainId(),
+        api.query.collatorAssignment.collatorContainerChain(),
+      ]);
 
-      // Set Timestamp
-      setTimeNow(BigInt(Date.now()));
+      paraIDs = [Number(tanssiID)].concat(Object.keys(containerChains.toHuman().containerChains).map(Number));
+
+      // If Dancebox, we need to account Flashbox also
+      if (network === 'dancebox') {
+        // Load Provider
+        const api = await subProvider('flashbox');
+
+        // Get Tanssi Para ID and Actives Parachain IDs
+        const [tanssiID, containerChains] = await Promise.all([
+          api.query.parachainInfo.parachainId(),
+          api.query.collatorAssignment.collatorContainerChain(),
+        ]);
+
+        paraIDs = paraIDs.concat(
+          Number(tanssiID),
+          ...Object.keys(containerChains.toHuman().containerChains).map(Number)
+        );
+      }
 
       // Chain Data
-      const data = await fetchChainData(paraIDs);
+      const data = await fetchChainData(paraIDs.sort());
       if (data) {
         setChainData(data);
       } else {
@@ -80,49 +96,68 @@ const ChainInfoComponent = ({ network }) => {
         let paraURL;
         let collatorPallet;
         let collatorMethod;
+        let chainType;
+        let label;
 
         // Fetch depend on Dancebox or ContainerChain
-        switch (paraID) {
-          case 0:
-            paraURL = `wss://fraa-dancebox-rpc.a.dancebox.tanssi.network`;
-            collatorPallet = 'collatorAssignment';
-            collatorMethod = 'collatorContainerChain';
-            break;
+        if (paraID === 1000 && network === 'dancebox') {
+          paraURL = `wss://fraa-flashbox-rpc.a.stagenet.tanssi.network`;
 
-          default:
-            paraURL = `wss://fraa-dancebox-${paraID}-rpc.a.dancebox.tanssi.network`;
-            collatorPallet = 'authoritiesNoting';
-            collatorMethod = 'authorities';
-            break;
+          chainType = 'orchestrator';
+          label = 'Flashbox';
+        } else if (paraID === 3000 && network === 'dancebox') {
+          paraURL = `wss://fraa-dancebox-rpc.a.dancebox.tanssi.network`;
+
+          chainType = 'orchestrator';
+          label = 'Dancebox';
+        } else if (paraID > 3000 && network === 'dancebox') {
+          paraURL = `wss://fraa-dancebox-${paraID}-rpc.a.dancebox.tanssi.network`;
+
+          chainType = 'appchain';
+          label = '';
+        } else if (paraID > 2000 && network === 'dancebox') {
+          paraURL = `wss://fraa-flashbox-${paraID}-rpc.a.stagenet.tanssi.network`;
+
+          chainType = 'appchain';
+          label = 'Snapchain';
         }
 
         // Create Container Provider and store the API instance
         const api = await subProvider(paraURL);
 
-        apiInstances.push({ api, paraID, collatorPallet, collatorMethod });
+        apiInstances.push({ api, paraID, paraURL, chainType, label });
       }
 
       // Fetch data in Parallel
-      const dataPromises = apiInstances.map(async ({ api, paraID, collatorPallet, collatorMethod }) => {
+      const dataPromises = apiInstances.map(async ({ api, paraID, paraURL, chainType, label }) => {
         const [healthy, properties, nCollators, timestamp, blockNumber, blockHash] = await Promise.all([
           api.rpc.system.health(),
           api.rpc.system.properties(),
-          api.query[collatorPallet][collatorMethod](),
+          chainType === 'orchestrator'
+            ? api.query.collatorAssignment.collatorContainerChain()
+            : api.query.authoritiesNoting.authorities(),
           api.query.timestamp.now(),
           api.rpc.chain.getBlock(await api.rpc.chain.getBlockHash()),
           api.rpc.chain.getBlockHash(),
         ]);
 
+        // Get ChainID if it is an EVM Chain
+        const ethChainId = properties.isEthereum ? (await api.rpc.eth.chainId()).toString().replaceAll(',', '') : null;
+
         await api.disconnect();
 
         return {
+          paraURL,
           paraID,
+          chainType,
           healthy,
           properties,
           nCollators,
           timestamp,
           blockNumber,
           blockHash,
+          ethChainId,
+          label,
         };
       });
 
@@ -143,17 +178,24 @@ const ChainInfoComponent = ({ network }) => {
           <Table fixed singleLine color='teal' textAlign='center'>
             <Table.Header>
               <Table.Row>
-                <Table.HeaderCell>Para ID</Table.HeaderCell>
-                <Table.HeaderCell>Status</Table.HeaderCell>
-                <Table.HeaderCell>is EVM?</Table.HeaderCell>
+                <Table.HeaderCell>Appchain ID</Table.HeaderCell>
+                <Table.HeaderCell>Type</Table.HeaderCell>
+                <Table.HeaderCell>EVM Chain ID</Table.HeaderCell>
                 <Table.HeaderCell>Token Symbol</Table.HeaderCell>
                 <Table.HeaderCell>Decimals</Table.HeaderCell>
                 <Table.HeaderCell># Collators</Table.HeaderCell>
                 <Table.HeaderCell>Last Block</Table.HeaderCell>
-                <Table.HeaderCell>
-                  Block # <br /> Explorer
-                </Table.HeaderCell>
+                <Table.HeaderCell>Lastest Block</Table.HeaderCell>
                 <Table.HeaderCell>Block Hash</Table.HeaderCell>
+                <Table.HeaderCell>
+                  Block Time
+                  {
+                    <>
+                      <br />
+                    </>
+                  }
+                  Stamp
+                </Table.HeaderCell>
               </Table.Row>
             </Table.Header>
             <Table.Body>
@@ -161,23 +203,48 @@ const ChainInfoComponent = ({ network }) => {
                 <Table.Row key={index}>
                   <Table.Cell>
                     <a
-                      href={
-                        item.paraID === 0
-                          ? 'https://polkadot.js.org/apps/?rpc=wss://fraa-dancebox-rpc.a.dancebox.tanssi.network#'
-                          : `https://polkadot.js.org/apps/?rpc=wss://fraa-dancebox-${item.paraID}-rpc.a.dancebox.tanssi.network#`
-                      }
+                      href={`https://polkadot.js.org/apps/?rpc=${item.paraURL}`}
                       target='_blank'
                       rel='noopener noreferrer'
                     >
-                      {item.paraID === 0 ? 'Dancebox' : item.paraID}
+                      {item.paraID}
                     </a>
                   </Table.Cell>
-                  <Table.Cell>{item.healthy.peers >= 1 ? '✔️' : '❌'}</Table.Cell>
-                  <Table.Cell>{item.properties.isEthereum ? '✔️' : '❌'}</Table.Cell>
+                  <Table.Cell>
+                    {item.properties.isEthereum ? (
+                      <>
+                        {'EVM'}
+                        <br />
+                        {item.label}
+                      </>
+                    ) : (
+                      <>
+                        {'Substrate'}
+                        <br />
+                        {item.label}
+                      </>
+                    )}
+                  </Table.Cell>
+                  <Table.Cell>
+                    {item.properties.isEthereum ? (
+                      <a
+                        href={`https://tanssi-evmexplorer.netlify.app/?rpcUrl=${item.paraURL.replaceAll(
+                          'wss',
+                          'https'
+                        )}`}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                      >
+                        {item.ethChainId}
+                      </a>
+                    ) : (
+                      '--'
+                    )}
+                  </Table.Cell>
                   <Table.Cell>{item.properties.tokenSymbol.toHuman()}</Table.Cell>
                   <Table.Cell>{item.properties.tokenDecimals.toHuman()}</Table.Cell>
                   <Table.Cell>
-                    {item.paraID === 0
+                    {item.chainType === 'orchestrator'
                       ? item.nCollators.orchestratorChain.length.toString()
                       : item.nCollators.length.toString()}
                   </Table.Cell>
@@ -188,38 +255,31 @@ const ChainInfoComponent = ({ network }) => {
                     ).toString()}s ago`}
                   </Table.Cell>
                   <Table.Cell>
-                    {item.blockNumber.block.header.number.toString()} <br />
-                    <a
-                      href={
-                        item.paraID === 0
-                          ? `https://polkadot.js.org/apps/?rpc=wss://fraa-dancebox-rpc.a.dancebox.tanssi.network#/explorer/query/${item.blockNumber.block.header.number.toString()}`
-                          : `https://polkadot.js.org/apps/?rpc=wss://fraa-dancebox-${
-                              item.paraID
-                            }-rpc.a.dancebox.tanssi.network#/explorer/query/${item.blockNumber.block.header.number.toString()}`
-                      }
-                      target='_blank'
-                      rel='noopener noreferrer'
-                    >
-                      {'Substrate'}
-                    </a>
                     {item.properties.isEthereum ? (
-                      <span>
-                        {' | '}
-                        <a
-                          href={`https://tanssi-evmexplorer.netlify.app/block/${item.blockNumber.block.header.number.toString()}/?rpcUrl=https://fraa-dancebox-${
-                            item.paraID
-                          }-rpc.a.dancebox.tanssi.network`}
-                          target='_blank'
-                          rel='noopener noreferrer'
-                        >
-                          {'EVM'}
-                        </a>
-                      </span>
+                      <a
+                        href={`https://tanssi-evmexplorer.netlify.app/block/${item.blockNumber.block.header.number.toString()}?rpcUrl=${item.paraURL.replaceAll(
+                          'wss',
+                          'https'
+                        )}`}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                      >
+                        {item.blockNumber.block.header.number.toString()}
+                      </a>
                     ) : (
-                      ''
+                      <a
+                        href={`https://polkadot.js.org/apps/?rpc=${
+                          item.paraURL
+                        }/#/explorer/query/${item.blockNumber.block.header.number.toString()}`}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                      >
+                        {item.blockNumber.block.header.number.toString()}
+                      </a>
                     )}
                   </Table.Cell>
                   <Table.Cell textAlign='left'>{item.blockHash.toString()}</Table.Cell>
+                  <Table.Cell textAlign='center'>{new Date(item.timestamp * 1000).toLocaleTimeString()}</Table.Cell>
                 </Table.Row>
               ))}
             </Table.Body>
