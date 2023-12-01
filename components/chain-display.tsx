@@ -187,15 +187,6 @@ const ChainInfoComponent = ({ network }) => {
                 <Table.HeaderCell>Last Block</Table.HeaderCell>
                 <Table.HeaderCell>Lastest Block</Table.HeaderCell>
                 <Table.HeaderCell>Block Hash</Table.HeaderCell>
-                <Table.HeaderCell>
-                  Block Time
-                  {
-                    <>
-                      <br />
-                    </>
-                  }
-                  Stamp
-                </Table.HeaderCell>
               </Table.Row>
             </Table.Header>
             <Table.Body>
@@ -279,7 +270,6 @@ const ChainInfoComponent = ({ network }) => {
                     )}
                   </Table.Cell>
                   <Table.Cell textAlign='left'>{item.blockHash.toString()}</Table.Cell>
-                  <Table.Cell textAlign='center'>{new Date(item.timestamp * 1000).toLocaleTimeString()}</Table.Cell>
                 </Table.Row>
               ))}
             </Table.Body>
