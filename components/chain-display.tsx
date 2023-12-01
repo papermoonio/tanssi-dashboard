@@ -102,12 +102,12 @@ const ChainInfoComponent = ({ network }) => {
           paraURL = `wss://fraa-flashbox-rpc.a.stagenet.tanssi.network`;
 
           chainType = 'orchestrator';
-          label = 'Flashbox';
+          label = '';
         } else if (paraID === 3000 && network === 'dancebox') {
           paraURL = `wss://fraa-dancebox-rpc.a.dancebox.tanssi.network`;
 
           chainType = 'orchestrator';
-          label = 'Dancebox';
+          label = '';
         } else if (paraID > 3000 && network === 'dancebox') {
           paraURL = `wss://fraa-dancebox-${paraID}-rpc.a.dancebox.tanssi.network`;
 
