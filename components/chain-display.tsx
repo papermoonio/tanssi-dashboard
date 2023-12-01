@@ -200,19 +200,7 @@ const ChainInfoComponent = ({ network }) => {
                     </a>
                   </Table.Cell>
                   <Table.Cell>
-                    {item.properties.isEthereum ? (
-                      <>
-                        {'EVM'}
-                        <br />
-                        {item.label}
-                      </>
-                    ) : (
-                      <>
-                        {'Substrate'}
-                        <br />
-                        {item.label}
-                      </>
-                    )}
+                    {item.properties.isEthereum ? `EVM ${item.label}` : `Substrate ${item.label}`}
                   </Table.Cell>
                   <Table.Cell>
                     {item.properties.isEthereum ? (
