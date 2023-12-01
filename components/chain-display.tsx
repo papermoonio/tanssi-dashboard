@@ -128,8 +128,7 @@ const ChainInfoComponent = ({ network }) => {
 
       // Fetch data in Parallel
       const dataPromises = apiInstances.map(async ({ api, paraID, paraURL, chainType, label }) => {
-        const [healthy, properties, nCollators, timestamp, blockNumber, blockHash] = await Promise.all([
-          api.rpc.system.health(),
+        const [properties, nCollators, timestamp, blockNumber, blockHash] = await Promise.all([
           api.rpc.system.properties(),
           chainType === 'orchestrator'
             ? api.query.collatorAssignment.collatorContainerChain()
@@ -176,14 +175,32 @@ const ChainInfoComponent = ({ network }) => {
           <Table fixed singleLine color='teal' textAlign='center'>
             <Table.Header>
               <Table.Row>
-                <Table.HeaderCell>Appchain ID</Table.HeaderCell>
-                <Table.HeaderCell>Type</Table.HeaderCell>
-                <Table.HeaderCell>EVM Chain ID</Table.HeaderCell>
-                <Table.HeaderCell>Token Symbol</Table.HeaderCell>
+                <Table.HeaderCell style={{ width: '100px' }}>Appchain ID</Table.HeaderCell>
+                <Table.HeaderCell style={{ width: '150px' }}>Type</Table.HeaderCell>
+                <Table.HeaderCell>
+                  EVM
+                  <>
+                    <br />
+                  </>
+                  Chain ID
+                </Table.HeaderCell>
+                <Table.HeaderCell>
+                  Token
+                  <>
+                    <br />
+                  </>
+                  Symbol
+                </Table.HeaderCell>
                 <Table.HeaderCell>Decimals</Table.HeaderCell>
                 <Table.HeaderCell># Collators</Table.HeaderCell>
                 <Table.HeaderCell>Last Block</Table.HeaderCell>
-                <Table.HeaderCell>Lastest Block</Table.HeaderCell>
+                <Table.HeaderCell>
+                  Lastest
+                  <>
+                    <br />
+                  </>
+                  Block
+                </Table.HeaderCell>
                 <Table.HeaderCell>Block Hash</Table.HeaderCell>
               </Table.Row>
             </Table.Header>
@@ -199,7 +216,7 @@ const ChainInfoComponent = ({ network }) => {
                       {item.paraID}
                     </a>
                   </Table.Cell>
-                  <Table.Cell>
+                  <Table.Cell style={{ minWidth: '200px' }}>
                     {item.properties.isEthereum ? `EVM ${item.label}` : `Substrate ${item.label}`}
                   </Table.Cell>
                   <Table.Cell>
