@@ -147,7 +147,6 @@ const ChainInfoComponent = ({ network }) => {
           paraURL,
           paraID,
           chainType,
-          healthy,
           properties,
           nCollators,
           timestamp,
