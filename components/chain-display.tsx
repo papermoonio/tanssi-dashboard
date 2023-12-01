@@ -3,8 +3,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Form, Container, Message, Table, Loader } from 'semantic-ui-react';
 import { subProvider } from '../web3/api';
 
-import _ from 'underscore';
-
 const ChainInfoComponent = ({ network }) => {
   const [chainData, setChainData] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
@@ -17,7 +15,9 @@ const ChainInfoComponent = ({ network }) => {
     loadAllData(network);
 
     // Load data every 4 seconds
-    const timer = setInterval(loadAllData, 4000);
+    const timer = setInterval(() => {
+      loadAllData(network);
+    }, 4000);
 
     return () => {
       // Clean up the timer when the component unmounts
@@ -94,8 +94,6 @@ const ChainInfoComponent = ({ network }) => {
       // Parallel APIs to optimize query speed
       for (const paraID of paraIDs) {
         let paraURL;
-        let collatorPallet;
-        let collatorMethod;
         let chainType;
         let label;
 
@@ -239,12 +237,7 @@ const ChainInfoComponent = ({ network }) => {
                       ? item.nCollators.orchestratorChain.length.toString()
                       : item.nCollators.length.toString()}
                   </Table.Cell>
-                  <Table.Cell>
-                    {`${(
-                      (BigInt(Date.now()) - BigInt(item.timestamp.toString())) / BigInt(1000) -
-                      BigInt(12)
-                    ).toString()}s ago`}
-                  </Table.Cell>
+                  <Table.Cell>{`${Math.floor((Date.now() - item.timestamp.toNumber()) / 1000 - 12)}s ago`}</Table.Cell>
                   <Table.Cell>
                     {item.properties.isEthereum ? (
                       <a
