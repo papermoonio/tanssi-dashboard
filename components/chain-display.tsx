@@ -17,7 +17,7 @@ const ChainInfoComponent = ({ network }) => {
     // Load data every 4 seconds
     const timer = setInterval(() => {
       loadAllData(network);
-    }, 4000);
+    }, 6000);
 
     return () => {
       // Clean up the timer when the component unmounts
