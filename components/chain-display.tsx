@@ -45,7 +45,9 @@ const ChainInfoComponent = ({ network }) => {
         api.query.collatorAssignment.collatorContainerChain(),
       ]);
 
-      paraIDs = [Number(tanssiID)].concat(Object.keys(containerChains.toHuman().containerChains).map(Number));
+      paraIDs = [Number(tanssiID)].concat(
+        Object.keys(containerChains.toHuman().containerChains).map(Number)
+      );
 
       // If Dancebox, we need to account Flashbox also
       if (network === 'dancebox') {
@@ -100,12 +102,10 @@ const ChainInfoComponent = ({ network }) => {
         // Fetch depend on Dancebox or ContainerChain
         if (paraID === 1000 && network === 'dancebox') {
           paraURL = `wss://fraa-flashbox-rpc.a.stagenet.tanssi.network`;
-
           chainType = 'orchestrator';
           label = '';
         } else if (paraID === 3000 && network === 'dancebox') {
           paraURL = `wss://fraa-dancebox-rpc.a.dancebox.tanssi.network`;
-
           chainType = 'orchestrator';
           label = '';
         } else if (paraID > 3000 && network === 'dancebox') {
@@ -115,7 +115,6 @@ const ChainInfoComponent = ({ network }) => {
           label = '';
         } else if (paraID > 2000 && network === 'dancebox') {
           paraURL = `wss://fraa-flashbox-${paraID}-rpc.a.stagenet.tanssi.network`;
-
           chainType = 'appchain';
           label = 'Snapchain';
         }
@@ -127,35 +126,40 @@ const ChainInfoComponent = ({ network }) => {
       }
 
       // Fetch data in Parallel
-      const dataPromises = apiInstances.map(async ({ api, paraID, paraURL, chainType, label }) => {
-        const [properties, nCollators, timestamp, blockNumber, blockHash] = await Promise.all([
-          api.rpc.system.properties(),
-          chainType === 'orchestrator'
-            ? api.query.collatorAssignment.collatorContainerChain()
-            : api.query.authoritiesNoting.authorities(),
-          api.query.timestamp.now(),
-          api.rpc.chain.getBlock(await api.rpc.chain.getBlockHash()),
-          api.rpc.chain.getBlockHash(),
-        ]);
+      const dataPromises = apiInstances.map(
+        async ({ api, paraID, paraURL, chainType, label }) => {
+          const [properties, nCollators, timestamp, blockNumber, blockHash] =
+            await Promise.all([
+              api.rpc.system.properties(),
+              chainType === 'orchestrator'
+                ? api.query.collatorAssignment.collatorContainerChain()
+                : api.query.authoritiesNoting.authorities(),
+              api.query.timestamp.now(),
+              api.rpc.chain.getBlock(await api.rpc.chain.getBlockHash()),
+              api.rpc.chain.getBlockHash(),
+            ]);
 
-        // Get ChainID if it is an EVM Chain
-        const ethChainId = properties.isEthereum ? (await api.rpc.eth.chainId()).toString().replaceAll(',', '') : null;
+          // Get ChainID if it is an EVM Chain
+          const ethChainId = properties.isEthereum
+            ? (await api.rpc.eth.chainId()).toString().replaceAll(',', '')
+            : null;
 
-        await api.disconnect();
+          await api.disconnect();
 
-        return {
-          paraURL,
-          paraID,
-          chainType,
-          properties,
-          nCollators,
-          timestamp,
-          blockNumber,
-          blockHash,
-          ethChainId,
-          label,
-        };
-      });
+          return {
+            paraURL,
+            paraID,
+            chainType,
+            properties,
+            nCollators,
+            timestamp,
+            blockNumber,
+            blockHash,
+            ethChainId,
+            label,
+          };
+        }
+      );
 
       // Wait for all data promises to resolve
       const data = await Promise.all(dataPromises);
@@ -174,8 +178,12 @@ const ChainInfoComponent = ({ network }) => {
           <Table fixed singleLine color='teal' textAlign='center'>
             <Table.Header>
               <Table.Row>
-                <Table.HeaderCell style={{ width: '100px' }}>Appchain ID</Table.HeaderCell>
-                <Table.HeaderCell style={{ width: '150px' }}>Type</Table.HeaderCell>
+                <Table.HeaderCell style={{ width: '100px' }}>
+                  Appchain ID
+                </Table.HeaderCell>
+                <Table.HeaderCell style={{ width: '150px' }}>
+                  Type
+                </Table.HeaderCell>
                 <Table.HeaderCell>
                   EVM
                   <>
@@ -216,7 +224,9 @@ const ChainInfoComponent = ({ network }) => {
                     </a>
                   </Table.Cell>
                   <Table.Cell style={{ minWidth: '200px' }}>
-                    {item.properties.isEthereum ? `EVM ${item.label}` : `Substrate ${item.label}`}
+                    {item.properties.isEthereum
+                      ? `EVM ${item.label}`
+                      : `Substrate ${item.label}`}
                   </Table.Cell>
                   <Table.Cell>
                     {item.properties.isEthereum ? (
@@ -234,14 +244,20 @@ const ChainInfoComponent = ({ network }) => {
                       '--'
                     )}
                   </Table.Cell>
-                  <Table.Cell>{item.properties.tokenSymbol.toHuman()}</Table.Cell>
-                  <Table.Cell>{item.properties.tokenDecimals.toHuman()}</Table.Cell>
+                  <Table.Cell>
+                    {item.properties.tokenSymbol.toHuman()}
+                  </Table.Cell>
+                  <Table.Cell>
+                    {item.properties.tokenDecimals.toHuman()}
+                  </Table.Cell>
                   <Table.Cell>
                     {item.chainType === 'orchestrator'
                       ? item.nCollators.orchestratorChain.length.toString()
                       : item.nCollators.length.toString()}
                   </Table.Cell>
-                  <Table.Cell>{`${Math.floor((Date.now() - item.timestamp.toNumber()) / 1000 - 12)}s ago`}</Table.Cell>
+                  <Table.Cell>{`${Math.floor(
+                    (Date.now() - item.timestamp.toNumber()) / 1000 - 12
+                  )}s ago`}</Table.Cell>
                   <Table.Cell>
                     {item.properties.isEthereum ? (
                       <a
@@ -266,7 +282,9 @@ const ChainInfoComponent = ({ network }) => {
                       </a>
                     )}
                   </Table.Cell>
-                  <Table.Cell textAlign='left'>{item.blockHash.toString()}</Table.Cell>
+                  <Table.Cell textAlign='left'>
+                    {item.blockHash.toString()}
+                  </Table.Cell>
                 </Table.Row>
               ))}
             </Table.Body>
@@ -281,8 +299,12 @@ const ChainInfoComponent = ({ network }) => {
   return (
     <div>
       <Form error={!!errorMessage}>
-        <h2>Tanssi {network.charAt(0).toUpperCase() + network.slice(1)} Dashboard</h2>
-        {loading === true && <Loader active inline='centered' content='Loading' />}
+        <h2>
+          Tanssi {network.charAt(0).toUpperCase() + network.slice(1)} Dashboard
+        </h2>
+        {loading === true && (
+          <Loader active inline='centered' content='Loading' />
+        )}
         {loading === false && <Container>{renderData()}</Container>}
 
         <Message error header='Oops!' content={errorMessage} />
