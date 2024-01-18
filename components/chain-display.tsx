@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 const ChainInfoComponent = ({ network }) => {
   const [loadedParaIDs, setLoadedParaIDs] = useState({});
-  const [paraIDs, setParaIDs] = useState([]);
+  const [paraIDs, setParaIDs] = useState({});
   const [isParaIDsLoaded, setIsParaIDsLoaded] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -20,8 +20,8 @@ const ChainInfoComponent = ({ network }) => {
     let timer;
 
     const fetchDataInterval = async () => {
-      for (const paraID of paraIDs) {
-        await fetchChainData([paraID]);
+      for (const subnetwork of Object.keys(paraIDs)) {
+        await fetchChainData({ [subnetwork]: paraIDs[subnetwork] });
       }
     };
 
@@ -45,7 +45,7 @@ const ChainInfoComponent = ({ network }) => {
     }
 
     try {
-      let paraIDs;
+      let paraIDs = {};
 
       // Load Provider
       const api = await subProvider(network);
@@ -58,7 +58,7 @@ const ChainInfoComponent = ({ network }) => {
 
       await api.disconnect();
 
-      paraIDs = [Number(tanssiID)].concat(
+      const danceboxParaIDs = [Number(tanssiID)].concat(
         Object.keys(containerChains.toHuman().containerChains).map(Number)
       );
 
@@ -73,10 +73,14 @@ const ChainInfoComponent = ({ network }) => {
           api.query.collatorAssignment.collatorContainerChain(),
         ]);
 
-        paraIDs = paraIDs.concat(
-          Number(tanssiID),
-          ...Object.keys(containerChains.toHuman().containerChains).map(Number)
+        const flashboxParaId = [Number(tanssiID)].concat(
+          Object.keys(containerChains.toHuman().containerChains).map(Number)
         );
+
+        paraIDs = {
+          dancebox: danceboxParaIDs.sort(),
+          flashbox: flashboxParaId.sort(),
+        };
 
         await api.disconnect();
       }
@@ -87,7 +91,7 @@ const ChainInfoComponent = ({ network }) => {
       setLoading(false);
 
       // Chain Data
-      fetchChainData(paraIDs.sort());
+      fetchChainData(paraIDs);
 
       // Mark Loading as Finished
       isInitialLoad.current = false;
@@ -98,71 +102,74 @@ const ChainInfoComponent = ({ network }) => {
 
   const fetchChainData = async (paraIDs) => {
     try {
-      // Check if Parachain IDs were obtained
-      if (!paraIDs || paraIDs.length === 0) {
-        return null;
-      }
-
-      // Parallel APIs to optimize query speed
-      for (const paraID of paraIDs) {
-        let paraURL;
-        let chainType;
-        let label;
-
-        // Fetch depend on Dancebox or ContainerChain
-        if (paraID === 1000 && network === 'dancebox') {
-          paraURL = `wss://fraa-flashbox-rpc.a.stagenet.tanssi.network`;
-          chainType = 'orchestrator';
-          label = '';
-        } else if (paraID === 3000 && network === 'dancebox') {
-          paraURL = `wss://fraa-dancebox-rpc.a.dancebox.tanssi.network`;
-          chainType = 'orchestrator';
-          label = '';
-        } else if (paraID > 3000 && network === 'dancebox') {
-          paraURL = `wss://fraa-dancebox-${paraID}-rpc.a.dancebox.tanssi.network`;
-          chainType = 'appchain';
-          label = '';
-        } else if (paraID > 2000 && network === 'dancebox') {
-          paraURL = `wss://fraa-flashbox-${paraID}-rpc.a.stagenet.tanssi.network`;
-          chainType = 'appchain';
-          label = 'Snap';
+      for (let subnetwork of Object.keys(paraIDs)) {
+        let subnetworkParaIDs = paraIDs[subnetwork];
+        // Check if Parachain IDs were obtained
+        if (!subnetworkParaIDs || subnetworkParaIDs.length === 0) {
+          return null;
         }
 
-        // Create Container Provider and store the API instance
-        const api = await subProvider(paraURL);
+        // Parallel APIs to optimize query speed
+        for (const paraID of subnetworkParaIDs) {
+          let paraURL;
+          let chainType;
+          let label;
 
-        const [properties, nCollators, timestamp, blockNumber, blockHash] =
-          await Promise.all([
-            api.rpc.system.properties(),
-            chainType === 'orchestrator'
-              ? api.query.collatorAssignment.collatorContainerChain()
-              : api.query.authoritiesNoting.authorities(),
-            api.query.timestamp.now(),
-            api.rpc.chain.getBlock(await api.rpc.chain.getBlockHash()),
-            api.rpc.chain.getBlockHash(),
-          ]);
+          // Fetch depend on Dancebox or ContainerChain
+          if (paraID === 1000 && subnetwork === 'flashbox') {
+            paraURL = `wss://fraa-flashbox-rpc.a.stagenet.tanssi.network`;
+            chainType = 'orchestrator';
+            label = '';
+          } else if (paraID === 3000 && subnetwork === 'dancebox') {
+            paraURL = `wss://fraa-dancebox-rpc.a.dancebox.tanssi.network`;
+            chainType = 'orchestrator';
+            label = '';
+          } else if (paraID > 3000 && subnetwork === 'dancebox') {
+            paraURL = `wss://fraa-dancebox-${paraID}-rpc.a.dancebox.tanssi.network`;
+            chainType = 'appchain';
+            label = '';
+          } else if (paraID > 2000 && subnetwork === 'flashbox') {
+            paraURL = `wss://fraa-flashbox-${paraID}-rpc.a.stagenet.tanssi.network`;
+            chainType = 'appchain';
+            label = 'Snap';
+          }
 
-        // Get ChainID if it is an EVM Chain
-        const ethChainId = properties.isEthereum.toHuman()
-          ? (await api.rpc.eth.chainId()).toString().replaceAll(',', '')
-          : null;
+          // Create Container Provider and store the API instance
+          const api = await subProvider(paraURL);
 
-        await api.disconnect();
+          const [properties, nCollators, timestamp, blockNumber, blockHash] =
+            await Promise.all([
+              api.rpc.system.properties(),
+              chainType === 'orchestrator'
+                ? api.query.collatorAssignment.collatorContainerChain()
+                : api.query.authoritiesNoting.authorities(),
+              api.query.timestamp.now(),
+              api.rpc.chain.getBlock(await api.rpc.chain.getBlockHash()),
+              api.rpc.chain.getBlockHash(),
+            ]);
 
-        setLoadedParaIDs((prevLoadedParaIDs) => ({
-          ...prevLoadedParaIDs,
-          [paraID]: {
-            paraURL,
-            chainType,
-            properties,
-            nCollators,
-            timestamp,
-            blockNumber,
-            blockHash,
-            ethChainId,
-            label,
-          },
-        }));
+          // Get ChainID if it is an EVM Chain
+          const ethChainId = properties.isEthereum.toHuman()
+            ? (await api.rpc.eth.chainId()).toString().replaceAll(',', '')
+            : null;
+
+          await api.disconnect();
+
+          setLoadedParaIDs((prevLoadedParaIDs) => ({
+            ...prevLoadedParaIDs,
+            [paraID]: {
+              paraURL,
+              chainType,
+              properties,
+              nCollators,
+              timestamp,
+              blockNumber,
+              blockHash,
+              ethChainId,
+              label,
+            },
+          }));
+        }
       }
     } catch (err) {
       setErrorMessage(err.message);
@@ -210,108 +217,116 @@ const ChainInfoComponent = ({ network }) => {
               </Table.Row>
             </Table.Header>
             <Table.Body>
-              {paraIDs.map((paraID, index) => {
-                if (!loadedParaIDs[paraID]) {
-                  // If data for paraID is not yet loaded, you can render a placeholder or loading state
+              {Object.keys(paraIDs).map((subnetwork) =>
+                (paraIDs[subnetwork] || []).map((paraID, index) => {
+                  if (!loadedParaIDs[paraID]) {
+                    // If data for paraID is not yet loaded, you can render a placeholder or loading state
+                    return (
+                      <Table.Row key={index}>
+                        <Table.Cell
+                          colSpan={9}
+                        >{`${paraID} Loading...`}</Table.Cell>
+                      </Table.Row>
+                    );
+                  }
                   return (
                     <Table.Row key={index}>
-                      <Table.Cell
-                        colSpan={9}
-                      >{`${paraID} Loading...`}</Table.Cell>
+                      <Table.Cell>
+                        <Link
+                          legacyBehavior
+                          href={`https://polkadot.js.org/apps/?rpc=${loadedParaIDs[paraID].paraURL}`}
+                          target='_blank'
+                          rel='noopener noreferrer'
+                        >
+                          {paraID}
+                        </Link>
+                      </Table.Cell>
+                      <Table.Cell style={{ minWidth: '200px' }}>
+                        {loadedParaIDs[paraID].properties.isEthereum.toHuman()
+                          ? `EVM ${loadedParaIDs[paraID].label}`
+                          : `Substrate ${loadedParaIDs[paraID].label}`}
+                      </Table.Cell>
+                      <Table.Cell>
+                        {loadedParaIDs[
+                          paraID
+                        ].properties.isEthereum.toHuman() ? (
+                          <Link
+                            legacyBehavior
+                            href={`https://tanssi-evmexplorer.netlify.app/?rpcUrl=${loadedParaIDs[
+                              paraID
+                            ].paraURL.replaceAll('wss', 'https')}`}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                          >
+                            {loadedParaIDs[paraID].ethChainId}
+                          </Link>
+                        ) : (
+                          '--'
+                        )}
+                      </Table.Cell>
+                      <Table.Cell>
+                        {loadedParaIDs[paraID].properties.tokenSymbol.toHuman()}
+                      </Table.Cell>
+                      <Table.Cell>
+                        {loadedParaIDs[
+                          paraID
+                        ].properties.tokenDecimals.toHuman()}
+                      </Table.Cell>
+                      <Table.Cell>
+                        {loadedParaIDs[paraID].chainType === 'orchestrator'
+                          ? loadedParaIDs[
+                              paraID
+                            ].nCollators.orchestratorChain.length.toString()
+                          : loadedParaIDs[paraID].nCollators.length.toString()}
+                      </Table.Cell>
+                      <Table.Cell>{`${Math.floor(
+                        (Date.now() -
+                          loadedParaIDs[paraID].timestamp.toNumber()) /
+                          1000 -
+                          12
+                      )}s ago`}</Table.Cell>
+                      <Table.Cell>
+                        {loadedParaIDs[
+                          paraID
+                        ].properties.isEthereum.toHuman() ? (
+                          <Link
+                            legacyBehavior
+                            href={`https://tanssi-evmexplorer.netlify.app/block/${loadedParaIDs[
+                              paraID
+                            ].blockNumber.block.header.number.toString()}?rpcUrl=${loadedParaIDs[
+                              paraID
+                            ].paraURL.replaceAll('wss', 'https')}`}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                          >
+                            {loadedParaIDs[
+                              paraID
+                            ].blockNumber.block.header.number.toString()}
+                          </Link>
+                        ) : (
+                          <Link
+                            legacyBehavior
+                            href={`https://polkadot.js.org/apps/?rpc=${
+                              loadedParaIDs[paraID].paraURL
+                            }/#/explorer/query/${loadedParaIDs[
+                              paraID
+                            ].blockNumber.block.header.number.toString()}`}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                          >
+                            {loadedParaIDs[
+                              paraID
+                            ].blockNumber.block.header.number.toString()}
+                          </Link>
+                        )}
+                      </Table.Cell>
+                      <Table.Cell textAlign='left'>
+                        {loadedParaIDs[paraID].blockHash.toString()}
+                      </Table.Cell>
                     </Table.Row>
                   );
-                }
-                return (
-                  <Table.Row key={index}>
-                    <Table.Cell>
-                      <Link
-                        legacyBehavior
-                        href={`https://polkadot.js.org/apps/?rpc=${loadedParaIDs[paraID].paraURL}`}
-                        target='_blank'
-                        rel='noopener noreferrer'
-                      >
-                        {paraID}
-                      </Link>
-                    </Table.Cell>
-                    <Table.Cell style={{ minWidth: '200px' }}>
-                      {loadedParaIDs[paraID].properties.isEthereum.toHuman()
-                        ? `EVM ${loadedParaIDs[paraID].label}`
-                        : `Substrate ${loadedParaIDs[paraID].label}`}
-                    </Table.Cell>
-                    <Table.Cell>
-                      {loadedParaIDs[paraID].properties.isEthereum.toHuman() ? (
-                        <Link
-                          legacyBehavior
-                          href={`https://tanssi-evmexplorer.netlify.app/?rpcUrl=${loadedParaIDs[
-                            paraID
-                          ].paraURL.replaceAll('wss', 'https')}`}
-                          target='_blank'
-                          rel='noopener noreferrer'
-                        >
-                          {loadedParaIDs[paraID].ethChainId}
-                        </Link>
-                      ) : (
-                        '--'
-                      )}
-                    </Table.Cell>
-                    <Table.Cell>
-                      {loadedParaIDs[paraID].properties.tokenSymbol.toHuman()}
-                    </Table.Cell>
-                    <Table.Cell>
-                      {loadedParaIDs[paraID].properties.tokenDecimals.toHuman()}
-                    </Table.Cell>
-                    <Table.Cell>
-                      {loadedParaIDs[paraID].chainType === 'orchestrator'
-                        ? loadedParaIDs[
-                            paraID
-                          ].nCollators.orchestratorChain.length.toString()
-                        : loadedParaIDs[paraID].nCollators.length.toString()}
-                    </Table.Cell>
-                    <Table.Cell>{`${Math.floor(
-                      (Date.now() -
-                        loadedParaIDs[paraID].timestamp.toNumber()) /
-                        1000 -
-                        12
-                    )}s ago`}</Table.Cell>
-                    <Table.Cell>
-                      {loadedParaIDs[paraID].properties.isEthereum.toHuman() ? (
-                        <Link
-                          legacyBehavior
-                          href={`https://tanssi-evmexplorer.netlify.app/block/${loadedParaIDs[
-                            paraID
-                          ].blockNumber.block.header.number.toString()}?rpcUrl=${loadedParaIDs[
-                            paraID
-                          ].paraURL.replaceAll('wss', 'https')}`}
-                          target='_blank'
-                          rel='noopener noreferrer'
-                        >
-                          {loadedParaIDs[
-                            paraID
-                          ].blockNumber.block.header.number.toString()}
-                        </Link>
-                      ) : (
-                        <Link
-                          legacyBehavior
-                          href={`https://polkadot.js.org/apps/?rpc=${
-                            loadedParaIDs[paraID].paraURL
-                          }/#/explorer/query/${loadedParaIDs[
-                            paraID
-                          ].blockNumber.block.header.number.toString()}`}
-                          target='_blank'
-                          rel='noopener noreferrer'
-                        >
-                          {loadedParaIDs[
-                            paraID
-                          ].blockNumber.block.header.number.toString()}
-                        </Link>
-                      )}
-                    </Table.Cell>
-                    <Table.Cell textAlign='left'>
-                      {loadedParaIDs[paraID].blockHash.toString()}
-                    </Table.Cell>
-                  </Table.Row>
-                );
-              })}
+                })
+              )}
             </Table.Body>
           </Table>
         </div>
