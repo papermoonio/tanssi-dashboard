@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Form, Container, Message, Table, Loader } from 'semantic-ui-react';
 import { subProvider } from '../web3/api';
+import Link from 'next/link';
 
 const ChainInfoComponent = ({ network }) => {
   const [loadedParaIDs, setLoadedParaIDs] = useState({});
@@ -223,13 +224,14 @@ const ChainInfoComponent = ({ network }) => {
                 return (
                   <Table.Row key={index}>
                     <Table.Cell>
-                      <a
+                      <Link
+                        legacyBehavior
                         href={`https://polkadot.js.org/apps/?rpc=${loadedParaIDs[paraID].paraURL}`}
                         target='_blank'
                         rel='noopener noreferrer'
                       >
                         {paraID}
-                      </a>
+                      </Link>
                     </Table.Cell>
                     <Table.Cell style={{ minWidth: '200px' }}>
                       {loadedParaIDs[paraID].properties.isEthereum.toHuman()
@@ -238,7 +240,8 @@ const ChainInfoComponent = ({ network }) => {
                     </Table.Cell>
                     <Table.Cell>
                       {loadedParaIDs[paraID].properties.isEthereum.toHuman() ? (
-                        <a
+                        <Link
+                          legacyBehavior
                           href={`https://tanssi-evmexplorer.netlify.app/?rpcUrl=${loadedParaIDs[
                             paraID
                           ].paraURL.replaceAll('wss', 'https')}`}
@@ -246,7 +249,7 @@ const ChainInfoComponent = ({ network }) => {
                           rel='noopener noreferrer'
                         >
                           {loadedParaIDs[paraID].ethChainId}
-                        </a>
+                        </Link>
                       ) : (
                         '--'
                       )}
@@ -272,7 +275,8 @@ const ChainInfoComponent = ({ network }) => {
                     )}s ago`}</Table.Cell>
                     <Table.Cell>
                       {loadedParaIDs[paraID].properties.isEthereum.toHuman() ? (
-                        <a
+                        <Link
+                          legacyBehavior
                           href={`https://tanssi-evmexplorer.netlify.app/block/${loadedParaIDs[
                             paraID
                           ].blockNumber.block.header.number.toString()}?rpcUrl=${loadedParaIDs[
@@ -284,9 +288,10 @@ const ChainInfoComponent = ({ network }) => {
                           {loadedParaIDs[
                             paraID
                           ].blockNumber.block.header.number.toString()}
-                        </a>
+                        </Link>
                       ) : (
-                        <a
+                        <Link
+                          legacyBehavior
                           href={`https://polkadot.js.org/apps/?rpc=${
                             loadedParaIDs[paraID].paraURL
                           }/#/explorer/query/${loadedParaIDs[
@@ -298,7 +303,7 @@ const ChainInfoComponent = ({ network }) => {
                           {loadedParaIDs[
                             paraID
                           ].blockNumber.block.header.number.toString()}
-                        </a>
+                        </Link>
                       )}
                     </Table.Cell>
                     <Table.Cell textAlign='left'>
