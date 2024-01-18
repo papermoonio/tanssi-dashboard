@@ -14,8 +14,8 @@
   "license": "ISC",
   "dependencies": {
     "@netlify/plugin-nextjs": "^4.29.1",
-    "@polkadot/api": "^9.7.1",
-    "@polkadot/util": "^10.1.11",
+    "@polkadot/api": "^10.11.2",
+    "@polkadot/util": "^12.6.2",
     "async": "^3.2.3",
     "ethers": "^5.5.3",
     "isomorphic-fetch": "^3.0.0",
