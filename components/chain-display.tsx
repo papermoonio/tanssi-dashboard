@@ -125,7 +125,7 @@ const ChainInfoComponent = ({ network }) => {
         } else if (paraID > 2000 && network === 'dancebox') {
           paraURL = `wss://fraa-flashbox-${paraID}-rpc.a.stagenet.tanssi.network`;
           chainType = 'appchain';
-          label = 'Snapchain';
+          label = 'Snap';
         }
 
         // Create Container Provider and store the API instance
