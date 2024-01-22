@@ -279,12 +279,18 @@ const ChainInfoComponent = ({ network }) => {
                             ].nCollators.orchestratorChain.length.toString()
                           : loadedParaIDs[paraID].nCollators.length.toString()}
                       </Table.Cell>
-                      <Table.Cell>{`${Math.floor(
-                        (Date.now() -
-                          loadedParaIDs[paraID].timestamp.toNumber()) /
-                          1000 -
-                          12
-                      )}s ago`}</Table.Cell>
+                      <Table.Cell>
+                        {loadedParaIDs[
+                          paraID
+                        ].blockNumber.block.header.number.toString() == '0'
+                          ? 'Not Live'
+                          : `${Math.floor(
+                              (Date.now() -
+                                loadedParaIDs[paraID].timestamp.toNumber()) /
+                                1000 -
+                                12
+                            )}s ago`}
+                      </Table.Cell>
                       <Table.Cell>
                         {loadedParaIDs[
                           paraID
