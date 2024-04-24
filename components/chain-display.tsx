@@ -9,8 +9,12 @@ const ChainInfoComponent = ({ network }) => {
   const [isParaIDsLoaded, setIsParaIDsLoaded] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
-
   const isInitialLoad = useRef(true);
+
+  const color = {
+    dancebox: 'black',
+    tanssi: 'teal',
+  };
 
   useEffect(() => {
     // First Load
@@ -191,7 +195,7 @@ const ChainInfoComponent = ({ network }) => {
     if (Object.keys(loadedParaIDs).length > 0) {
       return (
         <div>
-          <Table fixed singleLine color='teal' textAlign='center'>
+          <Table fixed singleLine color={color[network]} textAlign='center'>
             <Table.Header>
               <Table.Row>
                 <Table.HeaderCell style={{ width: '100px' }}>

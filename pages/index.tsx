@@ -10,7 +10,7 @@ const Networks = [
     key: 'Dancebox',
     text: 'Dancebox',
     value: 'dancebox',
-    image: { avatar: true, src: 'tanssi.png' },
+    image: { avatar: true, src: 'dancebox.png' },
   },
 ];
 
