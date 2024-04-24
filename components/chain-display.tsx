@@ -137,16 +137,25 @@ const ChainInfoComponent = ({ network }) => {
           // Create Container Provider and store the API instance
           const api = await subProvider(paraURL);
 
-          const [properties, nCollators, timestamp, blockNumber, blockHash] =
-            await Promise.all([
-              api.rpc.system.properties(),
-              chainType === 'orchestrator'
-                ? api.query.collatorAssignment.collatorContainerChain()
-                : api.query.authoritiesNoting.authorities(),
-              api.query.timestamp.now(),
-              api.rpc.chain.getBlock(await api.rpc.chain.getBlockHash()),
-              api.rpc.chain.getBlockHash(),
-            ]);
+          const [
+            properties,
+            nCollators,
+            timestamp,
+            blockNumber,
+            blockHash,
+            runtime,
+            blocktime,
+          ] = await Promise.all([
+            api.rpc.system.properties(),
+            chainType === 'orchestrator'
+              ? api.query.collatorAssignment.collatorContainerChain()
+              : api.query.authoritiesNoting.authorities(),
+            api.query.timestamp.now(),
+            api.rpc.chain.getBlock(await api.rpc.chain.getBlockHash()),
+            api.rpc.chain.getBlockHash(),
+            api.consts.system.version,
+            api.consts.timestamp.minimumPeriod,
+          ]);
 
           // Get ChainID if it is an EVM Chain
           const ethChainId = properties.isEthereum.toHuman()
@@ -165,6 +174,8 @@ const ChainInfoComponent = ({ network }) => {
               timestamp,
               blockNumber,
               blockHash,
+              runtime,
+              blocktime,
               ethChainId,
               label,
             },
@@ -186,8 +197,11 @@ const ChainInfoComponent = ({ network }) => {
                 <Table.HeaderCell style={{ width: '100px' }}>
                   Appchain ID
                 </Table.HeaderCell>
-                <Table.HeaderCell style={{ width: '150px' }}>
+                <Table.HeaderCell style={{ width: '100px' }}>
                   Type
+                </Table.HeaderCell>
+                <Table.HeaderCell style={{ width: '80px' }}>
+                  Runtime
                 </Table.HeaderCell>
                 <Table.HeaderCell>
                   EVM
@@ -247,6 +261,9 @@ const ChainInfoComponent = ({ network }) => {
                           : `Substrate ${loadedParaIDs[paraID].label}`}
                       </Table.Cell>
                       <Table.Cell>
+                        {loadedParaIDs[paraID].runtime.toHuman().specVersion}
+                      </Table.Cell>
+                      <Table.Cell>
                         {loadedParaIDs[
                           paraID
                         ].properties.isEthereum.toHuman() ? (
@@ -285,10 +302,8 @@ const ChainInfoComponent = ({ network }) => {
                         ].blockNumber.block.header.number.toString() == '0'
                           ? 'Not Live'
                           : `${Math.floor(
-                              (Date.now() -
-                                loadedParaIDs[paraID].timestamp.toNumber()) /
-                                1000 -
-                                12
+                              (Date.now() - loadedParaIDs[paraID].timestamp) /
+                                1000
                             )}s ago`}
                       </Table.Cell>
                       <Table.Cell>
