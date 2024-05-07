@@ -62,10 +62,12 @@ const ChainInfoComponent = ({ network }) => {
 
       await api.disconnect();
 
-      const danceboxParaIDs = [Number(tanssiID)].concat(
-        Object.keys(containerChains.toHuman().containerChains).map(Number)
-      );
-
+      const valuesToRemove = new Set([3091, 3092, 3093, 3094]);
+      const danceboxParaIDs = [Number(tanssiID)]
+        .concat(
+          Object.keys(containerChains.toHuman().containerChains).map(Number)
+        )
+        .filter((value) => !valuesToRemove.has(value));
       // If Dancebox, we need to account Flashbox also
       if (network === 'dancebox') {
         // Load Provider
