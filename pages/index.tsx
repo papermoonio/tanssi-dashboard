@@ -77,8 +77,8 @@ const TanssiDashboard = () => {
       )}
       <br />
       <p>
-        Don't judge the code :) as it is for demostration purposes only. You can
-        check the source code &nbsp;
+        Don't judge the code :) as it is for demonstration purposes only. You
+        can check the source code &nbsp;
         <Link
           legacyBehavior
           href='https://github.com/papermoonio/tanssi-dashboard'
