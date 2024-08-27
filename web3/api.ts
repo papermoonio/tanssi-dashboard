@@ -4,7 +4,7 @@ export async function subProvider(URL) {
   let WS;
   switch (URL) {
     case "dancebox":
-      WS = "wss://fraa-dancebox-rpc.a.dancebox.tanssi.network";
+      WS = "wss://dancebox.tanssi-api.network";
       break;
     case "flashbox":
       WS = "wss://fraa-flashbox-rpc.a.stagenet.tanssi.network";
