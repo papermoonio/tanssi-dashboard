@@ -127,7 +127,7 @@ const ChainInfoComponent = ({ network }) => {
             chainType = 'orchestrator';
             label = '';
           } else if (paraID === 3000 && subnetwork === 'dancebox') {
-            paraURL = `wss://fraa-dancebox-rpc.a.dancebox.tanssi.network`;
+            paraURL = `wss://dancebox.tanssi-api.network`;
             chainType = 'orchestrator';
             label = '';
           } else if (paraID > 3000 && subnetwork === 'dancebox') {
